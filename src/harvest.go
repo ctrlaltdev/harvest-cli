@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"time"
 )
@@ -13,14 +12,10 @@ var (
 )
 
 func newRequest(method string, path string, body *bytes.Buffer) *http.Request {
-	token := getToken()
-
 	req, err := http.NewRequest("GET", baseURL+path, body)
-	if err != nil {
-		log.Fatalln(err)
-	}
+	check(err)
 
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Authorization", "Bearer "+*token)
 	req.Header.Set("Harvest-Account-Id", *account)
 	req.Header.Set("User-Agent", "THI "+version)
 
@@ -31,16 +26,12 @@ func getUserInfo() string {
 	req := newRequest("GET", "users/me", bytes.NewBuffer(nil))
 
 	res, err := client.Do(req)
-	if err != nil {
-		log.Fatalln(err)
-	}
+	check(err)
 
 	defer res.Body.Close()
 
 	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		log.Fatalln(err)
-	}
+	check(err)
 
 	return string(body)
 }

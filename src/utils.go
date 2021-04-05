@@ -2,31 +2,39 @@ package main
 
 import (
 	"io/ioutil"
-	"log"
 	"os"
 	"os/user"
+	"path"
 	"strings"
 )
 
+func check(e error) {
+	if e != nil {
+		panic(e)
+	}
+}
+
 func getUserPath() string {
 	user, err := user.Current()
-	if err != nil {
-		log.Fatal(err)
-	}
+	check(err)
 
 	return user.HomeDir
 }
 
-func getToken() string {
-	data, err := ioutil.ReadFile(*tokenPath)
-	if err != nil {
-		log.Fatal(err)
+func getToken(path *string) string {
+	_, err := os.Stat(*path)
+
+	if os.IsNotExist(err) {
+		return ""
 	}
+
+	data, err := ioutil.ReadFile(*tokenPath)
+	check(err)
 
 	return strings.Replace(string(data), "\n", "", -1)
 }
 
-func getDefaultAccount(path *string) string {
+func getAccount(path *string) string {
 	_, err := os.Stat(*path)
 
 	if os.IsNotExist(err) {
@@ -34,9 +42,17 @@ func getDefaultAccount(path *string) string {
 	}
 
 	data, err := ioutil.ReadFile(*path)
-	if err != nil {
-		log.Fatal(err)
-	}
+	check(err)
 
 	return strings.Replace(string(data), "\n", "", -1)
+}
+
+func saveToFile(filename string, data string) {
+	filePath := path.Join(userHome, ".harvest", filename)
+	_, err := os.Stat(filePath)
+
+	if os.IsNotExist(err) {
+		err := ioutil.WriteFile(filePath, []byte(data), 0600)
+		check(err)
+	}
 }
