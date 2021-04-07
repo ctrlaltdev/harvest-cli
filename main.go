@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strconv"
 	"text/tabwriter"
 )
 
@@ -16,21 +17,39 @@ var (
 	_Account = flag.Int("account", 0, "Override Account ID")
 )
 
-func printActions() {
-	choices := []string{
-		"Start a new Time Entry",
-		"Restart a Time Entry",
-		"Stop a Time Entry",
-		"See Time Entries",
-		"See Projects",
+type Action struct {
+	label string
+	code  string
+}
+
+var Actions = []Action{
+	{label: "Start a new Time Entry", code: "new"},
+	{label: "Restart a Time Entry", code: "restart"},
+	{label: "Stop a Time Entry", code: "stop"},
+	{label: "See Time Entries", code: "list-time"},
+	{label: "See Projects", code: "list-proj"},
+}
+
+func translateAction(input string) string {
+	index, err := strconv.Atoi(input)
+	if err != nil {
+		return input
 	}
 
+	if index < len(Actions) && index >= 0 {
+		return Actions[index].code
+	} else {
+		return "Incorrect Input"
+	}
+}
+
+func printActions() {
 	w := new(tabwriter.Writer)
 	w.Init(os.Stdout, 4, 4, 2, ' ', 0)
 
 	fmt.Fprintf(w, "What do you want to do?\n\n")
-	for i, e := range choices {
-		fmt.Fprintf(w, "\n %d.\t%s\t", i+1, e)
+	for i, e := range Actions {
+		fmt.Fprintf(w, "\n %d.\t%s\t", i+1, e.label)
 	}
 	fmt.Fprintf(w, "\n\n Q.\t%s\t", "Exit")
 	fmt.Fprintf(w, "\n\n")
@@ -70,15 +89,11 @@ func printTimeEntries(timeEntries TimeEntriesResponse) {
 	defer w.Flush()
 }
 
-func main() {
-	printHeader()
-	flag.Parse()
-
+func checkSettings() {
 	if *_Token == "" && settings.Token == "" {
 		var newToken string
 		fmt.Print("Harvest Personal Token: ")
-		_, err := fmt.Scanln(&newToken)
-		Check(err)
+		fmt.Scanln(&newToken) // #nosec G104
 		settings.Token = newToken
 		SaveSettings()
 	}
@@ -86,8 +101,7 @@ func main() {
 	if *_Account == 0 && settings.Account == 0 {
 		var newAccount int
 		fmt.Print("Account ID: ")
-		_, err := fmt.Scanln(&newAccount)
-		Check(err)
+		fmt.Scanln(&newAccount) // #nosec G104
 		settings.Account = newAccount
 		SaveSettings()
 	}
@@ -97,27 +111,35 @@ func main() {
 		settings.User.ID = userinfo.ID
 		SaveSettings()
 	}
+}
+
+func main() {
+	printHeader()
+	flag.Parse()
+
+	checkSettings()
 
 	for {
 		printActions()
 
-		var action string
-		_, err := fmt.Scanln(&action)
-		Check(err)
+		var input string
+		fmt.Scanln(&input) // #nosec G104
 		fmt.Printf("\033[2J")
 
-		if action == "1" {
+		action := translateAction(input)
 
-		} else if action == "2" {
+		if action == "new" {
+
+		} else if action == "restart" {
 			timeEntries := GetTimeEntriesToggled(false)
 			printActionTimeEntries(timeEntries, false)
-		} else if action == "3" {
+		} else if action == "stop" {
 			timeEntries := GetTimeEntriesToggled(true)
 			printActionTimeEntries(timeEntries, true)
-		} else if action == "4" {
+		} else if action == "list-time" {
 			timeEntries := GetTimeEntries()
 			printTimeEntries(timeEntries)
-		} else if action == "5" {
+		} else if action == "list-proj" {
 			assignments := GetProjectAssignments()
 			printAssignments(assignments)
 		} else if action == "q" || action == "Q" || action == "" {
@@ -128,8 +150,7 @@ func main() {
 
 		fmt.Printf("\n\n")
 		var next bool
-		_, err = fmt.Scanln(&next)
-		Check(err)
+		fmt.Scanln(&next) // #nosec G104
 		fmt.Printf("\033[2J")
 	}
 }
