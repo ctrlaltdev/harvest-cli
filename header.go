@@ -47,7 +47,7 @@ func printHeader() {
 	headers = append(headers, h3)
 
 	rand.Seed(time.Now().UnixNano())
-	i := rand.Intn(len(headers))
+	i := rand.Intn(len(headers)) // #nosec G404
 
 	for _, l := range headers[i] {
 		fmt.Println(l)

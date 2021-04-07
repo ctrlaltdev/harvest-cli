@@ -22,8 +22,16 @@ func newRequest(method string, path string, body *bytes.Buffer) *http.Request {
 	req, err := http.NewRequest("GET", baseURL+path, body)
 	Check(err)
 
-	req.Header.Set("Authorization", "Bearer "+settings.Token)
-	req.Header.Set("Harvest-Account-Id", fmt.Sprint(settings.Account))
+	if *_Token != "" {
+		req.Header.Set("Authorization", "Bearer "+*_Token)
+	} else {
+		req.Header.Set("Authorization", "Bearer "+settings.Token)
+	}
+	if *_Account != 0 {
+		req.Header.Set("Harvest-Account-Id", fmt.Sprint(*_Account))
+	} else {
+		req.Header.Set("Harvest-Account-Id", fmt.Sprint(settings.Account))
+	}
 	req.Header.Set("User-Agent", "THI "+version)
 
 	return req
@@ -40,13 +48,15 @@ type Settings struct {
 func GetSettings() Settings {
 	settingsPath := path.Join(GetUserPath(), ".harvest", "settings.yaml")
 
-	data, err := ioutil.ReadFile(settingsPath)
+	data, err := ioutil.ReadFile(settingsPath) // #nosec G304
 	if os.IsNotExist(err) {
 		return Settings{}
 	} else {
 		var settings Settings
 
-		yaml.Unmarshal(data, &settings)
+		err := yaml.Unmarshal(data, &settings)
+		Check(err)
+
 		return settings
 	}
 }
@@ -85,7 +95,8 @@ func GetUserInfo() User {
 	Check(err)
 
 	var user User
-	json.Unmarshal(body, &user)
+	err = json.Unmarshal(body, &user)
+	Check(err)
 
 	return user
 }
@@ -124,7 +135,8 @@ func GetProjectAssignments() ProjectAssignmentsResponse {
 	Check(err)
 
 	var assignments ProjectAssignmentsResponse
-	json.Unmarshal(body, &assignments)
+	err = json.Unmarshal(body, &assignments)
+	Check(err)
 
 	return assignments
 }
@@ -153,14 +165,7 @@ type TimeEntriesResponse struct {
 	} `json:"time_entries"`
 }
 
-func GetTimeEntries() TimeEntriesResponse {
-	t := time.Now()
-
-	params := []Param{
-		{Name: "user_id", Value: fmt.Sprint(settings.User.ID)},
-		{Name: "from", Value: t.Format("2006-01-02")},
-	}
-
+func GetFilteredTimeEntries(params []Param) TimeEntriesResponse {
 	req := newRequest("GET", "time_entries"+CreateGETParams(params), bytes.NewBuffer(nil))
 
 	res, err := client.Do(req)
@@ -172,7 +177,31 @@ func GetTimeEntries() TimeEntriesResponse {
 	Check(err)
 
 	var timeEntries TimeEntriesResponse
-	json.Unmarshal(body, &timeEntries)
+	err = json.Unmarshal(body, &timeEntries)
+	Check(err)
 
 	return timeEntries
+}
+
+func GetTimeEntriesToggled(isRunning bool) TimeEntriesResponse {
+	t := time.Now()
+
+	params := []Param{
+		{Name: "user_id", Value: fmt.Sprint(settings.User.ID)},
+		{Name: "from", Value: t.Format("2006-01-02")},
+		{Name: "is_running", Value: fmt.Sprintf("%t", isRunning)},
+	}
+
+	return GetFilteredTimeEntries(params)
+}
+
+func GetTimeEntries() TimeEntriesResponse {
+	t := time.Now()
+
+	params := []Param{
+		{Name: "user_id", Value: fmt.Sprint(settings.User.ID)},
+		{Name: "from", Value: t.Format("2006-01-02")},
+	}
+
+	return GetFilteredTimeEntries(params)
 }

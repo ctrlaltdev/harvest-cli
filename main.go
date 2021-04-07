@@ -18,6 +18,9 @@ var (
 
 func printActions() {
 	choices := []string{
+		"Start a new Time Entry",
+		"Restart a Time Entry",
+		"Stop a Time Entry",
 		"See Time Entries",
 		"See Projects",
 	}
@@ -43,11 +46,26 @@ func printAssignments(assignments ProjectAssignmentsResponse) {
 	defer w.Flush()
 }
 
+func printActionTimeEntries(timeEntries TimeEntriesResponse, isRunning bool) {
+	w := new(tabwriter.Writer)
+	w.Init(os.Stdout, 8, 8, 4, ' ', 0)
+	for i, e := range timeEntries.TimeEntries {
+		fmt.Fprintf(w, "\n %d.\t%s\t%s\t%s\t%.2fhrs\t", i+1, e.Client.Name, e.Project.Name, e.Task.Name, e.HoursRounded)
+	}
+	defer w.Flush()
+}
+
 func printTimeEntries(timeEntries TimeEntriesResponse) {
 	w := new(tabwriter.Writer)
 	w.Init(os.Stdout, 8, 8, 4, ' ', 0)
-	for _, e := range timeEntries.TimeEntries {
-		fmt.Fprintf(w, "\n %s\t%s\t%s\t%.2fhrs\t", e.Client.Name, e.Project.Name, e.Task.Name, e.HoursRounded)
+	for i, e := range timeEntries.TimeEntries {
+		var state string
+		if e.IsRunning {
+			state = "running"
+		} else {
+			state = "stopped"
+		}
+		fmt.Fprintf(w, "\n %d.\t%s\t%s\t%s\t%.2fhrs\t%s\t", i+1, e.Client.Name, e.Project.Name, e.Task.Name, e.HoursRounded, state)
 	}
 	defer w.Flush()
 }
@@ -59,7 +77,8 @@ func main() {
 	if *_Token == "" && settings.Token == "" {
 		var newToken string
 		fmt.Print("Harvest Personal Token: ")
-		fmt.Scanln(&newToken)
+		_, err := fmt.Scanln(&newToken)
+		Check(err)
 		settings.Token = newToken
 		SaveSettings()
 	}
@@ -67,7 +86,8 @@ func main() {
 	if *_Account == 0 && settings.Account == 0 {
 		var newAccount int
 		fmt.Print("Account ID: ")
-		fmt.Scanln(&newAccount)
+		_, err := fmt.Scanln(&newAccount)
+		Check(err)
 		settings.Account = newAccount
 		SaveSettings()
 	}
@@ -82,16 +102,25 @@ func main() {
 		printActions()
 
 		var action string
-		fmt.Scanln(&action)
+		_, err := fmt.Scanln(&action)
+		Check(err)
 		fmt.Printf("\033[2J")
 
 		if action == "1" {
+
+		} else if action == "2" {
+			timeEntries := GetTimeEntriesToggled(false)
+			printActionTimeEntries(timeEntries, false)
+		} else if action == "3" {
+			timeEntries := GetTimeEntriesToggled(true)
+			printActionTimeEntries(timeEntries, true)
+		} else if action == "4" {
 			timeEntries := GetTimeEntries()
 			printTimeEntries(timeEntries)
-		} else if action == "2" {
+		} else if action == "5" {
 			assignments := GetProjectAssignments()
 			printAssignments(assignments)
-		} else if action == "q" || action == "Q" {
+		} else if action == "q" || action == "Q" || action == "" {
 			break
 		} else {
 			fmt.Println("Unrecognized Action")
@@ -99,7 +128,8 @@ func main() {
 
 		fmt.Printf("\n\n")
 		var next bool
-		fmt.Scanln(&next)
+		_, err = fmt.Scanln(&next)
+		Check(err)
 		fmt.Printf("\033[2J")
 	}
 }
