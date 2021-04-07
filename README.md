@@ -1,6 +1,8 @@
 # Terminal Harvest Interface
 
-You need a personal token available at `~/.harvest/token`.
+You will need to provide a personal token for Harvest and the account ID you want to use by default.  
+You can create a token by visiting: https://id.getharvest.com/developers  
+You can get the Account ID on the page of the token after you created it.
 
 ## Installation
 
@@ -15,5 +17,5 @@ brew install thi
 
 ## Usage
 
-WIP
-
+Just run `thi`.
+If you never set it up before, it will ask you for your personal token and the account ID
