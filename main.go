@@ -129,8 +129,32 @@ func main() {
 			fmt.Printf("\n\nEnd Date\n")
 			end, err := askDate()
 			Check(err)
+			fmt.Printf("\033[2J")
 
-			fmt.Println(start, end)
+			params := []Param{}
+
+			for {
+				action, err := askExportAction()
+				Check(err)
+				fmt.Printf("\033[2J")
+
+				if action == "filter-proj" {
+					project, err := askProject(assignments)
+					Check(err)
+					fmt.Printf("\033[2J")
+
+					projectParam := Param{Name: "project_id", Value: fmt.Sprint(project.Project.ID)}
+					clientParam := Param{Name: "client_id", Value: fmt.Sprint(project.Client.ID)}
+					params = append(params, projectParam)
+					params = append(params, clientParam)
+
+				} else if action == "export" {
+					HandleExportTimeEntries(start, end, params)
+					break
+				} else {
+					fmt.Println("Unrecognized Action")
+				}
+			}
 
 		} else if action == "list-proj" {
 

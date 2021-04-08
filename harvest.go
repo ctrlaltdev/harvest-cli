@@ -236,3 +236,12 @@ func HandleTimeEntryUpdate(timeEntries TimeEntriesResponse, input string, isRunn
 		RestartTimeEntry(entry.ID)
 	}
 }
+
+func HandleExportTimeEntries(start time.Time, end time.Time, filters []Param) {
+	filters = append(filters, Param{Name: "user_id", Value: fmt.Sprint(settings.User.ID)})
+	filters = append(filters, Param{Name: "from", Value: start.Format("2006-01-02")})
+	filters = append(filters, Param{Name: "to", Value: end.Format("2006-01-02")})
+
+	timeEntries := GetFilteredTimeEntries(filters)
+	exportTimeEntries(timeEntries)
+}

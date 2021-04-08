@@ -42,3 +42,13 @@ func printTimeEntries(timeEntries TimeEntriesResponse) {
 	}
 	defer w.Flush()
 }
+
+func exportTimeEntries(timeEntries TimeEntriesResponse) {
+	w := new(tabwriter.Writer)
+	w.Init(os.Stdout, 0, 0, 0, ' ', 0)
+	fmt.Fprintf(w, "\n%s,%s,%s,%s,%s", "Client", "Project", "Task", "Date", "Hours")
+	for _, e := range timeEntries.TimeEntries {
+		fmt.Fprintf(w, "\n\"%s\",\"%s\",\"%s\",\"%s\",%.2f", e.Client.Name, e.Project.Name, e.Task.Name, e.SpentDate, e.Hours)
+	}
+	defer w.Flush()
+}

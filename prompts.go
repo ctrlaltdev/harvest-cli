@@ -82,3 +82,40 @@ func askDate() (time.Time, error) {
 
 	return time.Parse("2006-01-02", fmt.Sprintf("%s-%s-%s", args[0], args[1], args[2]))
 }
+
+func askExportAction() (string, error) {
+	actions := []Action{
+		{label: "Export Time Entries", code: "export"},
+		{label: "Filter by Project", code: "filter-proj"},
+	}
+
+	w := new(tabwriter.Writer)
+	w.Init(os.Stdout, 8, 8, 2, ' ', 0)
+	fmt.Fprintf(w, "Please choose next action\n\n")
+
+	for i, e := range actions {
+		fmt.Fprintf(w, "\n %d.\t%s\t", i+1, e.label)
+	}
+
+	w.Flush() // #nosec G104
+	fmt.Printf("\n\n")
+
+	var input string
+	fmt.Scanln(&input) // #nosec G104
+
+	index, err := strconv.Atoi(input)
+	if err != nil {
+		return "", errors.New("you must enter a valid action Index")
+	}
+	index = index - 1
+
+	var action string
+
+	if index < len(actions) && index >= 0 {
+		action = actions[index].code
+	} else {
+		return "", errors.New("you must enter a valid action Index")
+	}
+
+	return action, nil
+}
