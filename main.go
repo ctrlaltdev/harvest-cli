@@ -28,6 +28,7 @@ var Actions = []Action{
 	{label: "Restart a Time Entry", code: "restart"},
 	{label: "Stop a Time Entry", code: "stop"},
 	{label: "See Time Entries", code: "list-time"},
+	{label: "Export Time Entries", code: "export-time"},
 	{label: "See Projects", code: "list-proj"},
 }
 
@@ -97,7 +98,7 @@ func askProject(assignments ProjectAssignmentsResponse) (ProjectAssignment, erro
 
 	index, err := strconv.Atoi(input)
 	if err != nil {
-		return ProjectAssignment{}, errors.New("You must enter a valid Project Index")
+		return ProjectAssignment{}, errors.New("you must enter a valid Project Index")
 	}
 	index = index - 1
 
@@ -106,7 +107,7 @@ func askProject(assignments ProjectAssignmentsResponse) (ProjectAssignment, erro
 	if index < len(assignments.ProjectAssignments) && index >= 0 {
 		project = assignments.ProjectAssignments[index]
 	} else {
-		return ProjectAssignment{}, errors.New("You must enter a valid Project Index")
+		return ProjectAssignment{}, errors.New("you must enter a valid Project Index")
 	}
 
 	return project, nil
@@ -127,7 +128,7 @@ func askTask(project ProjectAssignment) (TaskAssignment, error) {
 
 	index, err := strconv.Atoi(input)
 	if err != nil {
-		return TaskAssignment{}, errors.New("You must enter a valid Task Index")
+		return TaskAssignment{}, errors.New("you must enter a valid Task Index")
 	}
 	index = index - 1
 
@@ -136,7 +137,7 @@ func askTask(project ProjectAssignment) (TaskAssignment, error) {
 	if index < len(project.TaskAssignments) && index >= 0 {
 		task = project.TaskAssignments[index]
 	} else {
-		return TaskAssignment{}, errors.New("You must enter a valid Task Index")
+		return TaskAssignment{}, errors.New("you must enter a valid Task Index")
 	}
 
 	return task, nil
