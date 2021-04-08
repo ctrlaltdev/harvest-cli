@@ -1,0 +1,29 @@
+on:
+  release:
+    types: [created]
+
+name: Build Release
+jobs:
+  build:
+    name: Build Release
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        goos: [linux, darwin]
+        goarch: [arm64, amd64]
+
+    steps:
+    - name: checkout
+      uses: actions/checkout@v2
+
+    - uses: wangyoucao577/go-release-action@v1.16
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        goversion: 1.16
+        goos: ${{ matrix.goos }}
+        goarch: ${{ matrix.goarch }}
+        binary_name: "thi"
+        asset_name: "thi-${{ matrix.goos }}-${{ matrix.goarch }}"
+        md5sum: FALSE
+        sha256sum: TRUE
