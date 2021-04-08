@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -35,6 +36,7 @@ func translateAction(input string) string {
 	if err != nil {
 		return input
 	}
+	index = index - 1
 
 	if index < len(Actions) && index >= 0 {
 		return Actions[index].code
@@ -65,15 +67,6 @@ func printAssignments(assignments ProjectAssignmentsResponse) {
 	defer w.Flush()
 }
 
-func printActionTimeEntries(timeEntries TimeEntriesResponse, isRunning bool) {
-	w := new(tabwriter.Writer)
-	w.Init(os.Stdout, 8, 8, 4, ' ', 0)
-	for i, e := range timeEntries.TimeEntries {
-		fmt.Fprintf(w, "\n %d.\t%s\t%s\t%s\t%.2fhrs\t", i+1, e.Client.Name, e.Project.Name, e.Task.Name, e.HoursRounded)
-	}
-	defer w.Flush()
-}
-
 func printTimeEntries(timeEntries TimeEntriesResponse) {
 	w := new(tabwriter.Writer)
 	w.Init(os.Stdout, 8, 8, 4, ' ', 0)
@@ -87,6 +80,66 @@ func printTimeEntries(timeEntries TimeEntriesResponse) {
 		fmt.Fprintf(w, "\n %d.\t%s\t%s\t%s\t%.2fhrs\t%s\t", i+1, e.Client.Name, e.Project.Name, e.Task.Name, e.HoursRounded, state)
 	}
 	defer w.Flush()
+}
+
+func askProject(assignments ProjectAssignmentsResponse) (ProjectAssignment, error) {
+	w := new(tabwriter.Writer)
+	w.Init(os.Stdout, 8, 8, 2, ' ', 0)
+	fmt.Fprintf(w, "For what project?\n\n")
+	for i, e := range assignments.ProjectAssignments {
+		fmt.Fprintf(w, "\n %d.\t[%s]\t%s\t%s\t", i+1, e.Project.Code, e.Client.Name, e.Project.Name)
+	}
+	w.Flush()
+	fmt.Printf("\n\n")
+
+	var input string
+	fmt.Scanln(&input) // #nosec G104
+
+	index, err := strconv.Atoi(input)
+	if err != nil {
+		return ProjectAssignment{}, errors.New("You must enter a valid Project Index")
+	}
+	index = index - 1
+
+	var project ProjectAssignment
+
+	if index < len(assignments.ProjectAssignments) && index >= 0 {
+		project = assignments.ProjectAssignments[index]
+	} else {
+		return ProjectAssignment{}, errors.New("You must enter a valid Project Index")
+	}
+
+	return project, nil
+}
+
+func askTask(project ProjectAssignment) (TaskAssignment, error) {
+	w := new(tabwriter.Writer)
+	w.Init(os.Stdout, 8, 8, 2, ' ', 0)
+	fmt.Fprintf(w, "For what task?\n\n")
+	for i, e := range project.TaskAssignments {
+		fmt.Fprintf(w, "\n %d.\t%s\t", i+1, e.Task.Name)
+	}
+	w.Flush()
+	fmt.Printf("\n\n")
+
+	var input string
+	fmt.Scanln(&input) // #nosec G104
+
+	index, err := strconv.Atoi(input)
+	if err != nil {
+		return TaskAssignment{}, errors.New("You must enter a valid Task Index")
+	}
+	index = index - 1
+
+	var task TaskAssignment
+
+	if index < len(project.TaskAssignments) && index >= 0 {
+		task = project.TaskAssignments[index]
+	} else {
+		return TaskAssignment{}, errors.New("You must enter a valid Task Index")
+	}
+
+	return task, nil
 }
 
 func checkSettings() {
@@ -118,6 +171,7 @@ func main() {
 	flag.Parse()
 
 	checkSettings()
+	assignments := GetProjectAssignments()
 
 	for {
 		printActions()
@@ -130,22 +184,58 @@ func main() {
 
 		if action == "new" {
 
+			project, err := askProject(assignments)
+			Check(err)
+			fmt.Printf("\033[2J")
+
+			task, err := askTask(project)
+			Check(err)
+			fmt.Printf("\033[2J")
+
+			_, err = CreateTimeEntry(project.Project.ID, task.Task.ID)
+			Check(err)
+
+			fmt.Println("Time Entry Started")
+
 		} else if action == "restart" {
+
 			timeEntries := GetTimeEntriesToggled(false)
-			printActionTimeEntries(timeEntries, false)
+			printTimeEntries(timeEntries)
+			fmt.Printf("\n\n")
+
+			var input string
+			fmt.Scanln(&input) // #nosec G104
+
+			HandleTimeEntryUpdate(timeEntries, input, false)
+
 		} else if action == "stop" {
+
 			timeEntries := GetTimeEntriesToggled(true)
-			printActionTimeEntries(timeEntries, true)
+			printTimeEntries(timeEntries)
+			fmt.Printf("\n\n")
+
+			var input string
+			fmt.Scanln(&input) // #nosec G104
+
+			HandleTimeEntryUpdate(timeEntries, input, true)
+
 		} else if action == "list-time" {
+
 			timeEntries := GetTimeEntries()
 			printTimeEntries(timeEntries)
+
 		} else if action == "list-proj" {
-			assignments := GetProjectAssignments()
+
 			printAssignments(assignments)
+
 		} else if action == "q" || action == "Q" || action == "" {
+
 			break
+
 		} else {
+
 			fmt.Println("Unrecognized Action")
+
 		}
 
 		fmt.Printf("\n\n")

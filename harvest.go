@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strconv"
 	"time"
 
 	"gopkg.in/yaml.v2"
@@ -19,7 +20,7 @@ var (
 )
 
 func newRequest(method string, path string, body *bytes.Buffer) *http.Request {
-	req, err := http.NewRequest("GET", baseURL+path, body)
+	req, err := http.NewRequest(method, baseURL+path, body)
 	Check(err)
 
 	if *_Token != "" {
@@ -101,26 +102,30 @@ func GetUserInfo() User {
 	return user
 }
 
+type TaskAssignment struct {
+	ID   int `json:"id"`
+	Task struct {
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+	} `json:"task"`
+}
+
+type ProjectAssignment struct {
+	ID      int `json:"id"`
+	Project struct {
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+		Code string `json:"code"`
+	} `json:"project"`
+	Client struct {
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+	} `json:"client"`
+	TaskAssignments []TaskAssignment `json:"task_assignments"`
+}
+
 type ProjectAssignmentsResponse struct {
-	ProjectAssignments []struct {
-		ID      int `json:"id"`
-		Project struct {
-			ID   int    `json:"id"`
-			Name string `json:"name"`
-			Code string `json:"code"`
-		} `json:"project"`
-		Client struct {
-			ID   int    `json:"id"`
-			Name string `json:"name"`
-		} `json:"client"`
-		TaskAssignments []struct {
-			ID   int `json:"id"`
-			Task struct {
-				ID   int    `json:"id"`
-				Name string `json:"name"`
-			} `json:"task"`
-		} `json:"task_assignments"`
-	} `json:"project_assignments"`
+	ProjectAssignments []ProjectAssignment `json:"project_assignments"`
 }
 
 func GetProjectAssignments() ProjectAssignmentsResponse {
@@ -141,28 +146,30 @@ func GetProjectAssignments() ProjectAssignmentsResponse {
 	return assignments
 }
 
+type TimeEntry struct {
+	ID           int     `json:"id"`
+	SpentDate    string  `json:"spent_date"`
+	Hours        float64 `json:"hours"`
+	HoursRounded float64 `json:"rounded_hours"`
+	IsLocked     bool    `json:"is_locked"`
+	IsClosed     bool    `json:"is_closed"`
+	IsRunning    bool    `json:"is_running"`
+	Client       struct {
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+	} `json:"client"`
+	Project struct {
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+	} `json:"project"`
+	Task struct {
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+	} `json:"task"`
+}
+
 type TimeEntriesResponse struct {
-	TimeEntries []struct {
-		ID           int     `json:"id"`
-		SpentDate    string  `json:"spent_date"`
-		Hours        float64 `json:"hours"`
-		HoursRounded float64 `json:"rounded_hours"`
-		IsLocked     bool    `json:"is_locked"`
-		IsClosed     bool    `json:"is_closed"`
-		IsRunning    bool    `json:"is_running"`
-		Client       struct {
-			ID   int    `json:"id"`
-			Name string `json:"name"`
-		} `json:"client"`
-		Project struct {
-			ID   int    `json:"id"`
-			Name string `json:"name"`
-		} `json:"project"`
-		Task struct {
-			ID   int    `json:"id"`
-			Name string `json:"name"`
-		} `json:"task"`
-	} `json:"time_entries"`
+	TimeEntries []TimeEntry `json:"time_entries"`
 }
 
 func GetFilteredTimeEntries(params []Param) TimeEntriesResponse {
@@ -204,4 +211,111 @@ func GetTimeEntries() TimeEntriesResponse {
 	}
 
 	return GetFilteredTimeEntries(params)
+}
+
+type CreateTimeEntryRequest struct {
+	UserID    int    `json:"user_id"`
+	ProjectID int    `json:"project_id"`
+	TaskID    int    `json:"task_id"`
+	SpentDate string `json:"spent_date"`
+}
+
+func CreateTimeEntry(projectId int, taskId int) (TimeEntry, error) {
+	t := time.Now()
+
+	payload := CreateTimeEntryRequest{
+		UserID:    settings.User.ID,
+		ProjectID: projectId,
+		TaskID:    taskId,
+		SpentDate: t.Format("2006-01-02"),
+	}
+
+	jsonPayload, err := json.Marshal(payload)
+	Check(err)
+
+	req := newRequest("POST", "time_entries", bytes.NewBuffer(jsonPayload))
+	req.Header.Set("Content-Type", "application/json")
+
+	res, err := client.Do(req)
+	if err != nil {
+		return TimeEntry{}, err
+	}
+
+	defer res.Body.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+
+	if err != nil {
+		return TimeEntry{}, err
+	}
+
+	var entry TimeEntry
+	err = json.Unmarshal(body, &entry)
+
+	if err != nil {
+		return TimeEntry{}, err
+	}
+
+	return entry, nil
+}
+
+func RestartTimeEntry(id int) TimeEntry {
+	req := newRequest("PATCH", "time_entries/"+fmt.Sprint(id)+"/restart", bytes.NewBuffer(nil))
+
+	res, err := client.Do(req)
+	Check(err)
+
+	defer res.Body.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+	Check(err)
+
+	var entry TimeEntry
+	err = json.Unmarshal(body, &entry)
+
+	Check(err)
+
+	return entry
+}
+
+func StopTimeEntry(id int) TimeEntry {
+	req := newRequest("PATCH", "time_entries/"+fmt.Sprint(id)+"/stop", bytes.NewBuffer(nil))
+
+	res, err := client.Do(req)
+	Check(err)
+
+	defer res.Body.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+	Check(err)
+
+	var entry TimeEntry
+	err = json.Unmarshal(body, &entry)
+	Check(err)
+
+	return entry
+}
+
+func HandleTimeEntryUpdate(timeEntries TimeEntriesResponse, input string, isRunning bool) {
+	index, err := strconv.Atoi(input)
+	if err != nil {
+		fmt.Println("You must enter a valid Task Index")
+		return
+	}
+	index = index - 1
+
+	var entry TimeEntry
+
+	if index < len(Actions) && index >= 0 {
+		entry = timeEntries.TimeEntries[index]
+	} else {
+		fmt.Println("You must enter a valid Task Index")
+		return
+	}
+
+	if isRunning {
+		StopTimeEntry(entry.ID)
+	} else {
+		RestartTimeEntry(entry.ID)
+	}
 }
