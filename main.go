@@ -1,12 +1,9 @@
 package main
 
 import (
-	"errors"
 	"flag"
 	"fmt"
-	"os"
 	"strconv"
-	"text/tabwriter"
 )
 
 var (
@@ -17,11 +14,6 @@ var (
 	_Token   = flag.String("token", "", "Override Harvest Personal Token")
 	_Account = flag.Int("account", 0, "Override Account ID")
 )
-
-type Action struct {
-	label string
-	code  string
-}
 
 var Actions = []Action{
 	{label: "Start a new Time Entry", code: "new"},
@@ -44,103 +36,6 @@ func translateAction(input string) string {
 	} else {
 		return "Incorrect Input"
 	}
-}
-
-func printActions() {
-	w := new(tabwriter.Writer)
-	w.Init(os.Stdout, 4, 4, 2, ' ', 0)
-
-	fmt.Fprintf(w, "What do you want to do?\n\n")
-	for i, e := range Actions {
-		fmt.Fprintf(w, "\n %d.\t%s\t", i+1, e.label)
-	}
-	fmt.Fprintf(w, "\n\n Q.\t%s\t", "Exit")
-	fmt.Fprintf(w, "\n\n")
-	defer w.Flush()
-}
-
-func printAssignments(assignments ProjectAssignmentsResponse) {
-	w := new(tabwriter.Writer)
-	w.Init(os.Stdout, 8, 8, 2, ' ', 0)
-	for _, e := range assignments.ProjectAssignments {
-		fmt.Fprintf(w, "\n [%s]\t%s\t%s\t", e.Project.Code, e.Client.Name, e.Project.Name)
-	}
-	defer w.Flush()
-}
-
-func printTimeEntries(timeEntries TimeEntriesResponse) {
-	w := new(tabwriter.Writer)
-	w.Init(os.Stdout, 8, 8, 4, ' ', 0)
-	for i, e := range timeEntries.TimeEntries {
-		var state string
-		if e.IsRunning {
-			state = "running"
-		} else {
-			state = "stopped"
-		}
-		fmt.Fprintf(w, "\n %d.\t%s\t%s\t%s\t%.2fhrs\t%s\t", i+1, e.Client.Name, e.Project.Name, e.Task.Name, e.HoursRounded, state)
-	}
-	defer w.Flush()
-}
-
-func askProject(assignments ProjectAssignmentsResponse) (ProjectAssignment, error) {
-	w := new(tabwriter.Writer)
-	w.Init(os.Stdout, 8, 8, 2, ' ', 0)
-	fmt.Fprintf(w, "For what project?\n\n")
-	for i, e := range assignments.ProjectAssignments {
-		fmt.Fprintf(w, "\n %d.\t[%s]\t%s\t%s\t", i+1, e.Project.Code, e.Client.Name, e.Project.Name)
-	}
-	w.Flush() // #nosec G104
-	fmt.Printf("\n\n")
-
-	var input string
-	fmt.Scanln(&input) // #nosec G104
-
-	index, err := strconv.Atoi(input)
-	if err != nil {
-		return ProjectAssignment{}, errors.New("you must enter a valid Project Index")
-	}
-	index = index - 1
-
-	var project ProjectAssignment
-
-	if index < len(assignments.ProjectAssignments) && index >= 0 {
-		project = assignments.ProjectAssignments[index]
-	} else {
-		return ProjectAssignment{}, errors.New("you must enter a valid Project Index")
-	}
-
-	return project, nil
-}
-
-func askTask(project ProjectAssignment) (TaskAssignment, error) {
-	w := new(tabwriter.Writer)
-	w.Init(os.Stdout, 8, 8, 2, ' ', 0)
-	fmt.Fprintf(w, "For what task?\n\n")
-	for i, e := range project.TaskAssignments {
-		fmt.Fprintf(w, "\n %d.\t%s\t", i+1, e.Task.Name)
-	}
-	w.Flush() // #nosec G104
-	fmt.Printf("\n\n")
-
-	var input string
-	fmt.Scanln(&input) // #nosec G104
-
-	index, err := strconv.Atoi(input)
-	if err != nil {
-		return TaskAssignment{}, errors.New("you must enter a valid Task Index")
-	}
-	index = index - 1
-
-	var task TaskAssignment
-
-	if index < len(project.TaskAssignments) && index >= 0 {
-		task = project.TaskAssignments[index]
-	} else {
-		return TaskAssignment{}, errors.New("you must enter a valid Task Index")
-	}
-
-	return task, nil
 }
 
 func checkSettings() {
@@ -224,6 +119,18 @@ func main() {
 
 			timeEntries := GetTimeEntries()
 			printTimeEntries(timeEntries)
+
+		} else if action == "export-time" {
+
+			fmt.Printf("\n\nStart Date\n")
+			start, err := askDate()
+			Check(err)
+
+			fmt.Printf("\n\nEnd Date\n")
+			end, err := askDate()
+			Check(err)
+
+			fmt.Println(start, end)
 
 		} else if action == "list-proj" {
 
