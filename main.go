@@ -89,7 +89,7 @@ func askProject(assignments ProjectAssignmentsResponse) (ProjectAssignment, erro
 	for i, e := range assignments.ProjectAssignments {
 		fmt.Fprintf(w, "\n %d.\t[%s]\t%s\t%s\t", i+1, e.Project.Code, e.Client.Name, e.Project.Name)
 	}
-	w.Flush()
+	w.Flush() // #nosec G104
 	fmt.Printf("\n\n")
 
 	var input string
@@ -119,7 +119,7 @@ func askTask(project ProjectAssignment) (TaskAssignment, error) {
 	for i, e := range project.TaskAssignments {
 		fmt.Fprintf(w, "\n %d.\t%s\t", i+1, e.Task.Name)
 	}
-	w.Flush()
+	w.Flush() // #nosec G104
 	fmt.Printf("\n\n")
 
 	var input string
