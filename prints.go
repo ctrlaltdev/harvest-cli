@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"text/tabwriter"
+	"time"
 )
 
 func printActions() {
@@ -43,12 +45,31 @@ func printTimeEntries(timeEntries TimeEntriesResponse) {
 	defer w.Flush()
 }
 
-func exportTimeEntries(timeEntries TimeEntriesResponse) {
-	w := new(tabwriter.Writer)
-	w.Init(os.Stdout, 0, 0, 0, ' ', 0)
-	fmt.Fprintf(w, "\n%s,%s,%s,%s,%s", "Client", "Project", "Task", "Date", "Hours")
-	for _, e := range timeEntries.TimeEntries {
-		fmt.Fprintf(w, "\n\"%s\",\"%s\",\"%s\",\"%s\",%.2f", e.Client.Name, e.Project.Name, e.Task.Name, e.SpentDate, e.Hours)
+func exportTimeEntries(start time.Time, end time.Time, filters []Param, timeEntries TimeEntriesResponse) {
+	var filename string
+
+	extention := "csv"
+
+	if ParamContainsNested(filters, "Name", "project_id") {
+		safeClientName := SafeFileName(timeEntries.TimeEntries[0].Client.Name, "-")
+
+		filename = fmt.Sprintf("harvest_%s_%s_%s.%s", start.Format("2006-01-02"), end.Format("2006-01-02"), safeClientName, extention)
+	} else {
+		filename = fmt.Sprintf("harvest_%s_%s.%s", start.Format("2006-01-02"), end.Format("2006-01-02"), extention)
 	}
+
+	f, err := os.Create(filename)
+	Check(err)
+	defer f.Close()
+
+	w := bufio.NewWriter(f)
+
+	fmt.Fprintf(w, "%s,%s,%s,%s,%s\n", "Client", "Project", "Task", "Date", "Hours")
+	for _, e := range timeEntries.TimeEntries {
+		fmt.Fprintf(w, "\"%s\",\"%s\",\"%s\",\"%s\",%.2f\n", e.Client.Name, e.Project.Name, e.Task.Name, e.SpentDate, e.Hours)
+	}
+
 	defer w.Flush()
+
+	fmt.Printf("File %s created.\n\n", filename)
 }

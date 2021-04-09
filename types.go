@@ -78,7 +78,13 @@ type TimeEntry struct {
 }
 
 type TimeEntriesResponse struct {
-	TimeEntries []TimeEntry `json:"time_entries"`
+	TimeEntries  []TimeEntry `json:"time_entries"`
+	Page         int         `json:"page"`
+	PerPage      int         `json:"per_page"`
+	TotalPages   int         `json:"total_pages"`
+	TotalEntries int         `json:"total_entries"`
+	NextPage     *int        `json:"next_page"`
+	PreviousPage *int        `json:"previous_page"`
 }
 
 type CreateTimeEntryRequest struct {

@@ -242,6 +242,19 @@ func HandleExportTimeEntries(start time.Time, end time.Time, filters []Param) {
 	filters = append(filters, Param{Name: "from", Value: start.Format("2006-01-02")})
 	filters = append(filters, Param{Name: "to", Value: end.Format("2006-01-02")})
 
-	timeEntries := GetFilteredTimeEntries(filters)
-	exportTimeEntries(timeEntries)
+	timeEntries := TimeEntriesResponse{}
+
+	res := GetFilteredTimeEntries(filters)
+	timeEntries.TimeEntries = append(timeEntries.TimeEntries, res.TimeEntries...)
+
+	for res.NextPage != nil {
+		pagedFilters := filters
+		pagedFilters = append(pagedFilters, Param{Name: "page", Value: fmt.Sprint(*res.NextPage)})
+
+		res = GetFilteredTimeEntries(pagedFilters)
+
+		timeEntries.TimeEntries = append(timeEntries.TimeEntries, res.TimeEntries...)
+	}
+
+	exportTimeEntries(start, end, filters, timeEntries)
 }
