@@ -256,5 +256,5 @@ func HandleExportTimeEntries(start time.Time, end time.Time, filters []Param) {
 		timeEntries.TimeEntries = append(timeEntries.TimeEntries, res.TimeEntries...)
 	}
 
-	exportTimeEntries(start, end, filters, timeEntries)
+	exportTimeEntries(start, end, filters, timeEntries, "csv")
 }

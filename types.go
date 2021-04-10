@@ -93,3 +93,11 @@ type CreateTimeEntryRequest struct {
 	TaskID    int    `json:"task_id"`
 	SpentDate string `json:"spent_date"`
 }
+
+type TimeEntriesExport struct {
+	ClientName  string  `json:"clientName"`
+	ProjectName string  `json:"projectName"`
+	TaskName    string  `json:"taskName"`
+	SpentDate   string  `json:"date"`
+	Hours       float64 `json:"hours"`
+}

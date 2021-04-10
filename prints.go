@@ -45,10 +45,8 @@ func printTimeEntries(timeEntries TimeEntriesResponse) {
 	defer w.Flush()
 }
 
-func exportTimeEntries(start time.Time, end time.Time, filters []Param, timeEntries TimeEntriesResponse) {
+func exportTimeEntries(start time.Time, end time.Time, filters []Param, timeEntries TimeEntriesResponse, extention string) {
 	var filename string
-
-	extention := "csv"
 
 	if ParamContainsNested(filters, "Name", "project_id") {
 		safeClientName := SafeFileName(timeEntries.TimeEntries[0].Client.Name, "-")
