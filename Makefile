@@ -1,4 +1,4 @@
-_NAME=thi
+_NAME=harvest
 
 build:
 	go build -o bin/$(_NAME) .
