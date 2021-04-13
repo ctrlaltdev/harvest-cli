@@ -95,9 +95,9 @@ type CreateTimeEntryRequest struct {
 }
 
 type TimeEntriesExport struct {
-	ClientName  string  `json:"clientName"`
-	ProjectName string  `json:"projectName"`
-	TaskName    string  `json:"taskName"`
-	SpentDate   string  `json:"date"`
-	Hours       float64 `json:"hours"`
+	ClientName  string  `json:"clientName" yaml:"clientName"`
+	ProjectName string  `json:"projectName" yaml:"projectName"`
+	TaskName    string  `json:"taskName" yaml:"taskName"`
+	SpentDate   string  `json:"date" yaml:"date"`
+	Hours       float64 `json:"hours" yaml:"hours"`
 }

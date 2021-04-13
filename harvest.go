@@ -237,7 +237,7 @@ func HandleTimeEntryUpdate(timeEntries TimeEntriesResponse, input string, isRunn
 	}
 }
 
-func HandleExportTimeEntries(start time.Time, end time.Time, filters []Param) {
+func HandleExportTimeEntries(start time.Time, end time.Time, filters []Param, format string) {
 	filters = append(filters, Param{Name: "user_id", Value: fmt.Sprint(settings.User.ID)})
 	filters = append(filters, Param{Name: "from", Value: start.Format("2006-01-02")})
 	filters = append(filters, Param{Name: "to", Value: end.Format("2006-01-02")})
@@ -256,5 +256,5 @@ func HandleExportTimeEntries(start time.Time, end time.Time, filters []Param) {
 		timeEntries.TimeEntries = append(timeEntries.TimeEntries, res.TimeEntries...)
 	}
 
-	exportTimeEntries(start, end, filters, timeEntries, "csv")
+	exportTimeEntries(start, end, filters, timeEntries, format)
 }

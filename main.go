@@ -132,6 +132,7 @@ func main() {
 			fmt.Printf("\033[2J")
 
 			params := []Param{}
+			format := "csv"
 
 			for {
 				action, err := askExportAction()
@@ -147,9 +148,11 @@ func main() {
 					clientParam := Param{Name: "client_id", Value: fmt.Sprint(project.Client.ID)}
 					params = append(params, projectParam)
 					params = append(params, clientParam)
-
+				} else if action == "format" {
+					format, err = askExportFormat()
+					Check(err)
 				} else if action == "export" {
-					HandleExportTimeEntries(start, end, params)
+					HandleExportTimeEntries(start, end, params, format)
 					break
 				} else {
 					fmt.Println("Unrecognized Action")

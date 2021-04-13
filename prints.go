@@ -2,10 +2,13 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"os"
 	"text/tabwriter"
 	"time"
+
+	"gopkg.in/yaml.v2"
 )
 
 func printActions() {
@@ -45,15 +48,15 @@ func printTimeEntries(timeEntries TimeEntriesResponse) {
 	defer w.Flush()
 }
 
-func exportTimeEntries(start time.Time, end time.Time, filters []Param, timeEntries TimeEntriesResponse, extention string) {
+func exportTimeEntries(start time.Time, end time.Time, filters []Param, timeEntries TimeEntriesResponse, extension string) {
 	var filename string
 
 	if ParamContainsNested(filters, "Name", "project_id") {
 		safeClientName := SafeFileName(timeEntries.TimeEntries[0].Client.Name, "-")
 
-		filename = fmt.Sprintf("harvest_%s_%s_%s.%s", start.Format("2006-01-02"), end.Format("2006-01-02"), safeClientName, extention)
+		filename = fmt.Sprintf("harvest_%s_%s_%s.%s", start.Format("2006-01-02"), end.Format("2006-01-02"), safeClientName, extension)
 	} else {
-		filename = fmt.Sprintf("harvest_%s_%s.%s", start.Format("2006-01-02"), end.Format("2006-01-02"), extention)
+		filename = fmt.Sprintf("harvest_%s_%s.%s", start.Format("2006-01-02"), end.Format("2006-01-02"), extension)
 	}
 
 	f, err := os.Create(filename)
@@ -62,9 +65,35 @@ func exportTimeEntries(start time.Time, end time.Time, filters []Param, timeEntr
 
 	w := bufio.NewWriter(f)
 
-	fmt.Fprintf(w, "%s,%s,%s,%s,%s\n", "Client", "Project", "Task", "Date", "Hours")
+	exportEntries := []TimeEntriesExport{}
+
 	for _, e := range timeEntries.TimeEntries {
-		fmt.Fprintf(w, "\"%s\",\"%s\",\"%s\",\"%s\",%.2f\n", e.Client.Name, e.Project.Name, e.Task.Name, e.SpentDate, e.Hours)
+		exportEntries = append(exportEntries, TimeEntriesExport{
+			ClientName:  e.Client.Name,
+			ProjectName: e.Project.Name,
+			TaskName:    e.Task.Name,
+			SpentDate:   e.SpentDate,
+			Hours:       e.Hours,
+		})
+	}
+
+	if extension == "csv" {
+		fmt.Fprintf(w, "%s,%s,%s,%s,%s\n", "Client", "Project", "Task", "Date", "Hours")
+		for _, e := range exportEntries {
+			fmt.Fprintf(w, "\"%s\",\"%s\",\"%s\",\"%s\",%.2f\n", e.ClientName, e.ProjectName, e.TaskName, e.SpentDate, e.Hours)
+		}
+	} else if extension == "json" {
+		jsonPayload, err := json.Marshal(exportEntries)
+		Check(err)
+
+		fmt.Fprintf(w, "%s\n", jsonPayload)
+	} else if extension == "yml" {
+		yamlPayload, err := yaml.Marshal(exportEntries)
+		Check(err)
+
+		fmt.Fprintf(w, "%s\n", yamlPayload)
+	} else {
+		panic(fmt.Sprintf("extension unrecognized: %s", extension))
 	}
 
 	defer w.Flush()
