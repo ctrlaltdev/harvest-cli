@@ -61,7 +61,6 @@ func exportTimeEntries(start time.Time, end time.Time, filters []Param, timeEntr
 
 	f, err := os.Create(filename)
 	Check(err)
-	defer f.Close()
 
 	w := bufio.NewWriter(f)
 
@@ -96,7 +95,11 @@ func exportTimeEntries(start time.Time, end time.Time, filters []Param, timeEntr
 		panic(fmt.Sprintf("extension unrecognized: %s", extension))
 	}
 
-	defer w.Flush()
+	err = w.Flush()
+	Check(err)
+
+	err = f.Close()
+	Check(err)
 
 	fmt.Printf("File %s created.\n\n", filename)
 }
