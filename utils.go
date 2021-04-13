@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/user"
 	"path"
+	"regexp"
 	"strings"
 )
 
@@ -60,4 +61,21 @@ func SaveToFile(folder string, filename string, data []byte) {
 
 	err = ioutil.WriteFile(filePath, data, 0600)
 	Check(err)
+}
+
+func SafeFileName(s string, r string) string {
+	re := regexp.MustCompile(`[^0-9A-Za-z]`)
+	safe := re.ReplaceAllString(s, r)
+
+	return safe
+}
+
+func ParamContainsNested(p []Param, key string, val string) bool {
+	for _, e := range p {
+		if (key == "Name" && e.Name == val) || (key == "Value" && e.Value == val) {
+			return true
+		}
+	}
+
+	return false
 }
