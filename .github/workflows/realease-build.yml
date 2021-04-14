@@ -1,8 +1,9 @@
+name: Build Release
+
 on:
   release:
     types: [created]
 
-name: Build Release
 jobs:
   build:
     name: Build Release
@@ -23,7 +24,7 @@ jobs:
         goversion: 1.16
         goos: ${{ matrix.goos }}
         goarch: ${{ matrix.goarch }}
-        binary_name: "thi"
-        asset_name: "thi-${{ matrix.goos }}-${{ matrix.goarch }}"
+        binary_name: "harvest"
+        asset_name: "harvest-${{ matrix.goos }}-${{ matrix.goarch }}"
         md5sum: FALSE
         sha256sum: TRUE

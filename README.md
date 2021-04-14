@@ -7,15 +7,15 @@ You can get the Account ID on the page of the token after you created it.
 ## Installation
 
 ```sh
-brew install ctrlaltdev/tap/thi
+brew install ctrlaltdev/tap/harvest
 ```
 or 
 ```sh
 brew tap ctrlaltdev/tap
-brew install thi
+brew install harvest
 ```
 
 ## Usage
 
-Just run `thi`.
+Just run `harvest`.
 If you never set it up before, it will ask you for your personal token and the account ID
