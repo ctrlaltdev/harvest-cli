@@ -43,7 +43,7 @@ func printTimeEntries(timeEntries TimeEntriesResponse) {
 		} else {
 			state = "stopped"
 		}
-		fmt.Fprintf(w, "\n %d.\t%s\t%s\t%s\t%.2fhrs\t%s\t", i+1, e.Client.Name, e.Project.Name, e.Task.Name, e.HoursRounded, state)
+		fmt.Fprintf(w, "\n %d.\t%s\t%s\t%s\t%.2fhrs\t%s\t%s\t", i+1, e.Client.Name, e.Project.Name, e.Task.Name, e.HoursRounded, state, e.Notes)
 	}
 	defer w.Flush()
 }
@@ -73,13 +73,14 @@ func exportTimeEntries(start time.Time, end time.Time, filters []Param, timeEntr
 			TaskName:    e.Task.Name,
 			SpentDate:   e.SpentDate,
 			Hours:       e.Hours,
+			Notes:       e.Notes,
 		})
 	}
 
 	if extension == "csv" {
-		fmt.Fprintf(w, "%s,%s,%s,%s,%s\n", "Client", "Project", "Task", "Date", "Hours")
+		fmt.Fprintf(w, "%s,%s,%s,%s,%s,%s\n", "Client", "Project", "Task", "Date", "Hours", "Notes")
 		for _, e := range exportEntries {
-			fmt.Fprintf(w, "\"%s\",\"%s\",\"%s\",\"%s\",%.2f\n", e.ClientName, e.ProjectName, e.TaskName, e.SpentDate, e.Hours)
+			fmt.Fprintf(w, "\"%s\",\"%s\",\"%s\",\"%s\",%.2f,\"%s\"\n", e.ClientName, e.ProjectName, e.TaskName, e.SpentDate, e.Hours, e.Notes)
 		}
 	} else if extension == "json" {
 		jsonPayload, err := json.Marshal(exportEntries)

@@ -63,6 +63,7 @@ type TimeEntry struct {
 	IsLocked     bool    `json:"is_locked"`
 	IsClosed     bool    `json:"is_closed"`
 	IsRunning    bool    `json:"is_running"`
+	Notes        string  `json:"notes"`
 	Client       struct {
 		ID   int    `json:"id"`
 		Name string `json:"name"`
@@ -100,4 +101,5 @@ type TimeEntriesExport struct {
 	TaskName    string  `json:"taskName" yaml:"taskName"`
 	SpentDate   string  `json:"date" yaml:"date"`
 	Hours       float64 `json:"hours" yaml:"hours"`
+	Notes       string  `json:"notes" yaml:"notes"`
 }
